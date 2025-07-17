@@ -65,8 +65,10 @@ spec:
             command: ["python", "-c", "import time; time.sleep(1); print('alive')"]
           initialDelaySeconds: 5
           periodSeconds: 10
+          timeoutSeconds: 5 # Increased timeout
         readinessProbe: # Simple readiness probe
           exec:
             command: ["python", "-c", "import time; time.sleep(1); print('ready')"]
           initialDelaySeconds: 10
           periodSeconds: 10
+          timeoutSeconds: 5 # Increased timeout
