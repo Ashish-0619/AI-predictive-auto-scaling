@@ -26,6 +26,13 @@ spec:
         imagePullPolicy: Never # Crucial for Minikube to use local image
         ports:
         - containerPort: 5000
+        resources: # <--- ADDED THIS SECTION
+          requests:
+            cpu: "100m" # Request 100 millicores of CPU
+            memory: "128Mi" # Request 128 MiB of memory (good practice to include)
+          limits: # Optional: set limits to prevent resource starvation
+            cpu: "500m" # Limit to 500 millicores
+            memory: "512Mi" # Limit to 512 MiB
         livenessProbe: # Health check for the container
           httpGet:
             path: /health
