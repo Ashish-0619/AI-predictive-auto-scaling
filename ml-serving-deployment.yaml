@@ -1,0 +1,54 @@
+# ml-serving-deployment.yaml
+# This file defines the Kubernetes Deployment and Service for the
+# ML model serving Flask application.
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-predictive-scaler
+  namespace: default # Deploy in default namespace for simplicity
+  labels:
+    app: ml-predictive-scaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-predictive-scaler
+  template:
+    metadata:
+      labels:
+        app: ml-predictive-scaler
+    spec:
+      containers:
+      - name: ml-app
+        image: ml-predictive-scaler-app:latest # Use the image you built locally
+        imagePullPolicy: Never # Crucial for Minikube to use local image
+        ports:
+        - containerPort: 5000
+        livenessProbe: # Health check for the container
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe: # Readiness check before sending traffic
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-predictive-scaler-service
+  namespace: default
+spec:
+  selector:
+    app: ml-predictive-scaler
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
+  type: ClusterIP # Internal service, accessible within the cluster
