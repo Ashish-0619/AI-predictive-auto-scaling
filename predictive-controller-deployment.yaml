@@ -1,0 +1,72 @@
+# predictive-controller-deployment.yaml
+# This file defines the Kubernetes Deployment, Service Account, and RBAC
+# for the Predictive Scaler Controller.
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: predictive-scaler-controller-sa
+  namespace: default # Deploy in default namespace for simplicity
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: predictive-scaler-controller-role
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["pods", "services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "patch"] # Need patch to update replicas
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch", "patch"] # Need patch to update HPA
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: predictive-scaler-controller-rolebinding
+subjects:
+- kind: ServiceAccount
+  name: predictive-scaler-controller-sa
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: predictive-scaler-controller-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: predictive-scaler-controller
+  namespace: default
+  labels:
+    app: predictive-scaler-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: predictive-scaler-controller
+  template:
+    metadata:
+      labels:
+        app: predictive-scaler-controller
+    spec:
+      serviceAccountName: predictive-scaler-controller-sa # Link to the ServiceAccount
+      containers:
+      - name: controller
+        image: predictive-scaler-controller-app:latest # Use the image you will build locally
+        imagePullPolicy: Never # Crucial for Minikube to use local image
+        # No ports needed as it's an internal controller
+        livenessProbe: # Simple liveness probe to check if the container is running
+          exec:
+            command: ["python", "-c", "import time; time.sleep(1); print('alive')"]
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe: # Simple readiness probe
+          exec:
+            command: ["python", "-c", "import time; time.sleep(1); print('ready')"]
+          initialDelaySeconds: 10
+          periodSeconds: 10
